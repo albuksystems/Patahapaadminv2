@@ -1,1 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pata Hapa — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #25D366;
+    --green-dark: #128C7E;
+    --gold: #F4C430;
+    --bg: #080c08;
+    --surface: #0f140f;
+    --surface2: #161e16;
+    --surface3: #1c261c;
+    --border: #1f2e1f;
+    --text: #e8f0e8;
+    --muted: #6a8a6a;
+    --red: #ff4444;
+    --blue: #7B8FFF;
+  }
 
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Syne',sans-serif; min-height:100vh; }
+
+  /* LOGIN */
+  #loginScreen {
+    min-height:100vh; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; padding:24px;
+    background:radial-gradient(ellipse at 50% 0%, #0d2a0d 0%, var(--bg) 60%);
+  }
+
+  .login-logo { font-size:2.8rem; font-weight:800; color:var(--green); letter-spacing:-2px; margin-bottom:4px; }
+  .login-logo span { color:var(--gold); }
+  .login-sub { font-family:'Space Mono',monospace; font-size:0.65rem; color:var(--muted); letter-spacing:3px; text-transform:uppercase; margin-bottom:40px; }
+
+  .login-card { width:100%; max-width:360px; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:28px 24px; }
+  .login-card h2 { font-size:1rem; font-weight:600; margin-bottom:6px; }
+  .login-card p { font-family:'Space Mono',monospace; font-size:0.65rem; color:var(--muted); margin-bottom:24px; }
+
+  .field { margin-bottom:16px; }
+  .field label { display:block; font-family:'Space Mono',monospace; font-size:0.65rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
+
+  .input-wrap { position:relative; display:flex; align-items:center; }
+
+  .field input, .field textarea {
+    width:100%; background:var(--surface2); border:1px solid var(--border);
+    border-radius:10px; padding:12px 14px; color:var(--text);
+    font-family:'Syne',sans-serif; font-size:0.875rem; outline:none;
+    transition:border-color 0.2s; -webkit-appearance:none;
+  }
+
+  .field input:focus, .field textarea:focus { border-color:var(--green-dark); }
+  .field input::placeholder, .field textarea::placeholder { color:var(--muted); }
+  .field textarea { resize:none; height:80px; }
+
+  /* Password input with room for toggle */
+  .input-wrap input { padding-right:46px; }
+
+  .pw-toggle {
+    position:absolute; right:14px;
+    background:none; border:none; cursor:pointer;
+    color:var(--muted); font-size:1rem; line-height:1;
+    padding:4px; transition:color 0.2s;
+    display:flex; align-items:center;
+  }
+  .pw-toggle:hover { color:var(--green); }
+
+  .btn-primary {
+    width:100%; padding:14px; background:var(--green); border:none;
+    border-radius:10px; color:#000; font-family:'Syne',sans-serif;
+    font-weight:700; font-size:0.95rem; cursor:pointer;
+    transition:background 0.2s,transform 0.1s;
+  }
+  .btn-primary:hover { background:#1db954; }
+  .btn-primary:active { transform:scale(0.98); }
+
+  .login-error {
+    margin-top:12px; padding:10px 14px;
+    background:rgba(255,68,68,0.1); border:1px solid rgba(255,68,68,0.3);
+    border-radius:8px; font-family:'Space Mono',monospace; font-size:0.7rem;
+    color:var(--red); display:none;
+  }
+
+  /* HINT */
+  .login-hint {
+    margin-top:14px; padding:10px 14px;
+    background:rgba(37,211,102,0.07); border:1px solid rgba(37,211,102,0.2);
+    border-radius:8px; font-family:'Space Mono',monospace; font-size:0.65rem;
+    color:var(--muted); line-height:1.8;
+  }
+  .login-hint strong { color:var(--green); }
+
+  /* ADMIN SHELL */
+  #adminShell { display:none; }
+
+  .topbar {
+    background:var(--surface); border-bottom:1px solid var(--border);
+    padding:14px 20px; display:flex; align-items:center;
+    justify-content:space-between; position:sticky; top:0; z-index:100;
+  }
+  .topbar-logo { font-size:1.4rem; font-weight:800; color:var(--green); letter-spacing:-1px; }
+  .topbar-logo span { color:var(--gold); }
+  .topbar-right { display:flex; align-items:center; gap:12px; }
+  .topbar-tag { font-family:'Space Mono',monospace; font-size:0.6rem; color:var(--muted); letter-spacing:1px; }
+  .logout-btn { padding:6px 12px; background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--muted); font-family:'Space Mono',monospace; font-size:0.6rem; cursor:pointer; transition:all 0.2s; }
+  .logout-btn:hover { border-color:var(--red); color:var(--red); }
+
+  .stats-bar { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); border-bottom:1px solid var(--border); }
+  .stat-item { background:var(--surface); padding:16px 12px; text-align:center; }
+  .stat-num { font-size:1.6rem; font-weight:800; color:var(--green); line-height:1; }
+  .stat-label { font-family:'Space Mono',monospace; font-size:0.6rem; color:var(--muted); margin-top:4px; letter-spacing:1px; text-transform:uppercase; }
+
+  .content { padding:20px 16px; max-width:600px; margin:0 auto; display:flex; flex-direction:column; gap:20px; }
+
+  .section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .section-head h2 { font-size:0.75rem; font-family:'Space Mono',monospace; color:var(--gold); letter-spacing:2px; text-transform:uppercase; }
+
+  .form-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+  .form-card-header { padding:16px 20px; background:var(--surface2); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; cursor:pointer; }
+  .form-card-header h3 { font-size:0.9rem; font-weight:600; }
+  .toggle-icon { color:var(--muted); font-size:1.2rem; transition:transform 0.3s; }
+  .form-card-header.open .toggle-icon { transform:rotate(45deg); }
+  .form-body { padding:20px; display:none; }
+  .form-body.open { display:block; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+  .tier-selector { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:8px; }
+  .tier-opt { padding:10px 6px; border-radius:10px; border:1px solid var(--border); text-align:center; cursor:pointer; transition:all 0.2s; }
+  .tier-opt .t-name { font-family:'Space Mono',monospace; font-size:0.65rem; font-weight:700; }
+  .tier-opt .t-price { font-size:0.75rem; font-weight:600; margin-top:3px; }
+  .tier-opt.selected-mtaa { background:#0d1f0d; border-color:var(--green); }
+  .tier-opt.selected-biashara { background:#0d0d2a; border-color:var(--blue); }
+  .tier-opt.selected-corridor { background:#1f1400; border-color:var(--gold); }
+  .tier-opt:not([class*="selected"]):hover { border-color:var(--muted); }
+
+  .cat-grid { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .cat-chip { padding:5px 12px; border-radius:16px; border:1px solid var(--border); font-family:'Space Mono',monospace; font-size:0.65rem; cursor:pointer; transition:all 0.2s; color:var(--muted); }
+  .cat-chip.active { background:var(--green-dark); border-color:var(--green); color:#fff; }
+
+  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--green); color:#000; padding:12px 24px; border-radius:24px; font-family:'Space Mono',monospace; font-size:0.75rem; font-weight:700; z-index:999; transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1); white-space:nowrap; }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+
+  .listings-wrap { display:flex; flex-direction:column; gap:10px; }
+
+  .listing-item { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 16px; display:flex; align-items:flex-start; gap:12px; animation:fadeUp 0.3s ease; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  .listing-tier-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+  .dot-mtaa { background:var(--green); }
+  .dot-biashara { background:var(--blue); }
+  .dot-corridor { background:var(--gold); }
+
+  .listing-details { flex:1; min-width:0; }
+  .listing-name { font-weight:700; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .listing-meta { font-family:'Space Mono',monospace; font-size:0.62rem; color:var(--muted); margin-top:3px; }
+  .listing-cats { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+  .cat-tag { padding:2px 7px; background:var(--surface3); border-radius:8px; font-family:'Space Mono',monospace; font-size:0.58rem; color:var(--muted); }
+
+  .listing-actions { display:flex; flex-direction:column; gap:6px; flex-shrink:0; }
+  .action-btn { padding:5px 10px; border-radius:7px; border:1px solid var(--border); background:transparent; font-family:'Space Mono',monospace; font-size:0.6rem; cursor:pointer; transition:all 0.2s; color:var(--muted); }
+  .action-btn.delete:hover { border-color:var(--red); color:var(--red); }
+  .action-btn.wa:hover { border-color:var(--green); color:var(--green); }
+
+  .filter-bar { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; -ms-overflow-style:none; scrollbar-width:none; }
+  .filter-bar::-webkit-scrollbar { display:none; }
+  .filter-btn { padding:6px 14px; border-radius:16px; border:1px solid var(--border); background:transparent; color:var(--muted); font-family:'Space Mono',monospace; font-size:0.62rem; cursor:pointer; white-space:nowrap; transition:all 0.2s; flex-shrink:0; }
+  .filter-btn.active { background:var(--surface2); border-color:var(--green-dark); color:var(--green); }
+
+  .empty-state { text-align:center; padding:40px 20px; color:var(--muted); }
+  .empty-state .icon { font-size:2.5rem; margin-bottom:12px; }
+  .empty-state p { font-family:'Space Mono',monospace; font-size:0.7rem; line-height:1.6; }
+
+  .search-input { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:11px 14px; color:var(--text); font-family:'Syne',sans-serif; font-size:0.875rem; outline:none; transition:border-color 0.2s; }
+  .search-input:focus { border-color:var(--green-dark); }
+  .search-input::placeholder { color:var(--muted); }
+
+  .export-btn { padding:8px 16px; background:transparent; border:1px solid var(--gold); border-radius:10px; color:var(--gold); font-family:'Space Mono',monospace; font-size:0.65rem; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+  .export-btn:hover { background:rgba(244,196,48,0.1); }
+
+  /* BUSINESS CREATOR */
+  .biz-creator { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+  .biz-creator-head { padding:16px 20px; background:var(--surface2); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; cursor:pointer; transition:background 0.2s; }
+  .biz-creator-head:hover { background:var(--surface3); }
+  .biz-creator-head h3 { font-size:0.9rem; font-weight:600; }
+  .biz-creator-body { padding:20px; display:none; }
+  .biz-creator-body.open { display:block; }
+  .generated-creds { background:var(--surface2); border:1px solid var(--green-dark); border-radius:12px; padding:16px; margin-top:16px; display:none; }
+  .generated-creds.visible { display:block; }
+  .cred-row { display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); }
+  .cred-row:last-child { border-bottom:none; }
+  .cred-label { font-family:'Space Mono',monospace; font-size:0.62rem; color:var(--muted); }
+  .cred-value { font-family:'Space Mono',monospace; font-size:0.72rem; color:var(--green); font-weight:700; }
+  .copy-creds-btn { width:100%; padding:11px; background:var(--green); border:none; border-radius:10px; color:#000; font-family:'Syne',sans-serif; font-weight:700; font-size:0.85rem; cursor:pointer; margin-top:12px; transition:background 0.2s; }
+  .copy-creds-btn:hover { background:#1db954; }
+  .wa-creds-btn { width:100%; padding:11px; background:transparent; border:1px solid var(--green-dark); border-radius:10px; color:var(--green); font-family:'Syne',sans-serif; font-weight:600; font-size:0.85rem; cursor:pointer; margin-top:8px; transition:all 0.2s; text-decoration:none; display:block; text-align:center; }
+  .wa-creds-btn:hover { background:var(--green-dark); color:#fff; }
+
+  /* EDIT MODAL */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:500; align-items:flex-end; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--surface); border:1px solid var(--border); border-radius:20px 20px 0 0; padding:24px 20px 36px; width:100%; max-width:560px; animation:slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1); max-height:85vh; overflow-y:auto; }
+  @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+  .modal-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+  .modal-head h3 { font-size:1rem; font-weight:700; }
+  .modal-close-btn { width:32px; height:32px; background:var(--surface2); border:1px solid var(--border); border-radius:50%; cursor:pointer; color:var(--muted); font-size:1.2rem; display:flex; align-items:center; justify-content:center; }
+  .modal-save-btn { width:100%; padding:14px; background:var(--green); border:none; border-radius:12px; color:#000; font-family:'Syne',sans-serif; font-weight:800; font-size:0.95rem; cursor:pointer; margin-top:4px; transition:background 0.2s; }
+  .modal-save-btn:hover { background:#1db954; }
+
+  /* SUSPENDED STATE */
+  .listing-item.suspended { opacity:0.5; border-color:var(--red); }
+  .suspended-badge { display:inline-block; padding:2px 8px; background:rgba(255,68,68,0.15); border:1px solid rgba(255,68,68,0.3); border-radius:6px; font-family:'Space Mono',monospace; font-size:0.55rem; color:var(--red); margin-left:6px; vertical-align:middle; }
+  .active-badge { display:inline-block; padding:2px 8px; background:rgba(37,211,102,0.1); border:1px solid rgba(37,211,102,0.2); border-radius:6px; font-family:'Space Mono',monospace; font-size:0.55rem; color:var(--green); margin-left:6px; vertical-align:middle; }
+  .action-btn.edit { color:var(--blue); }
+  .action-btn.edit:hover { border-color:var(--blue); color:var(--blue); background:rgba(123,143,255,0.1); }
+  .action-btn.suspend { color:var(--gold); }
+  .action-btn.suspend:hover { border-color:var(--gold); color:var(--gold); }
+  .action-btn.reactivate { color:var(--green); }
+  .action-btn.reactivate:hover { border-color:var(--green); color:var(--green); }
+  .upgrade-signal { display:inline-block; padding:2px 8px; background:rgba(255,68,68,0.15); border:1px solid rgba(255,68,68,0.3); border-radius:6px; font-family:'Space Mono',monospace; font-size:0.55rem; color:#ff6666; margin-left:6px; }
+  .inactive-signal { display:inline-block; padding:2px 8px; background:rgba(244,196,48,0.1); border:1px solid rgba(244,196,48,0.3); border-radius:6px; font-family:'Space Mono',monospace; font-size:0.55rem; color:var(--gold); margin-left:6px; }
+  .loop-banner { background:linear-gradient(135deg,#0d2a0d,#1a2a00); border:1px solid var(--green-dark); border-radius:12px; padding:14px 16px; margin-bottom:8px; }
+  .loop-banner p { font-family:'Space Mono',monospace; font-size:0.65rem; color:var(--muted); line-height:1.8; }
+  .loop-steps { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .loop-step { font-family:'Space Mono',monospace; font-size:0.6rem; color:var(--green); }
+  .loop-arrow { color:var(--muted); font-size:0.7rem; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-logo">Pata<span>Hapa</span></div>
+  <div class="login-sub">Admin Command Centre</div>
+
+  <div class="login-card">
+    <h2>Sign In</h2>
+    <p>Albuk Global · Mlolongo Corridor</p>
+
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="loginUser" placeholder="Enter username" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label>Password</label>
+      <div class="input-wrap">
+        <input type="password" id="loginPass" placeholder="Enter password" onkeydown="if(event.key==='Enter') doLogin()">
+        <button class="pw-toggle" onclick="togglePassword()" type="button" id="pwToggleBtn" title="Show/hide password">
+          👁
+        </button>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="doLogin()">Sign In →</button>
+    <div class="login-error" id="loginError">❌ Incorrect username or password. Please try again.</div>
+
+    <div class="login-hint">
+      <strong>Username:</strong> albuk<br>
+      <strong>Password:</strong> patahapa2024
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN SHELL -->
+<div id="adminShell">
+
+  <div class="topbar">
+    <div class="topbar-logo">Pata<span>Hapa</span></div>
+    <div class="topbar-right">
+      <span class="topbar-tag">REVENUE & GROWTH CENTRE</span>
+      <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-item">
+      <div class="stat-num" id="statTotal">0</div>
+      <div class="stat-label">Listings</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" id="statRevenue" style="color:var(--gold)">0</div>
+      <div class="stat-label">KES / Month</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" id="statCats" style="color:var(--blue)">0</div>
+      <div class="stat-label">Categories</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- LOOP BANNER -->
+    <div class="loop-banner">
+      <p>Every listing you add here appears live on the marketplace — customers find it and WhatsApp the business directly.</p>
+      <div class="loop-steps">
+        <span class="loop-step">Add Business</span><span class="loop-arrow">→</span>
+        <span class="loop-step">Live on Marketplace</span><span class="loop-arrow">→</span>
+        <span class="loop-step">Customer Finds It</span><span class="loop-arrow">→</span>
+        <span class="loop-step">WhatsApp Chat</span><span class="loop-arrow">→</span>
+        <span class="loop-step">💰 Sale</span>
+      </div>
+    </div>
+
+    <!-- ADD LISTING -->
+    <div class="form-card">
+      <div class="form-card-header" id="formToggle" onclick="toggleForm()">
+        <h3>➕ Add New Listing</h3>
+        <span class="toggle-icon">+</span>
+      </div>
+      <div class="form-body" id="formBody">
+        <div class="form-row">
+          <div class="field">
+            <label>Business Name *</label>
+            <input type="text" id="fName" placeholder="e.g. Kabbo Shop">
+          </div>
+          <div class="field">
+            <label>WhatsApp Number *</label>
+            <input type="tel" id="fWa" placeholder="0700000000">
+          </div>
+        </div>
+        <div class="field">
+          <label>Location *</label>
+          <input type="text" id="fLocation" placeholder="e.g. Biashara St, Mlolongo">
+        </div>
+        <div class="field">
+          <label>Price Info (optional)</label>
+          <input type="text" id="fPrice" placeholder="e.g. Unga 2kg — KES 210">
+        </div>
+        <div class="field">
+          <label>Subscription Tier *</label>
+          <div class="tier-selector">
+            <div class="tier-opt" id="tier-mtaa" onclick="selectTier('mtaa')">
+              <div class="t-name" style="color:var(--green)">MTAA</div>
+              <div class="t-price">99 KES</div>
+            </div>
+            <div class="tier-opt" id="tier-biashara" onclick="selectTier('biashara')">
+              <div class="t-name" style="color:var(--blue)">BIASHARA</div>
+              <div class="t-price">199 KES</div>
+            </div>
+            <div class="tier-opt" id="tier-corridor" onclick="selectTier('corridor')">
+              <div class="t-name" style="color:var(--gold)">CORRIDOR</div>
+              <div class="t-price">299 KES</div>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Categories (select one or more) *</label>
+          <div class="cat-grid">
+            <div class="cat-chip" onclick="toggleCat(this,'unga')">🌾 Unga</div>
+            <div class="cat-chip" onclick="toggleCat(this,'hardware')">🔧 Hardware</div>
+            <div class="cat-chip" onclick="toggleCat(this,'gas')">🔥 Gas</div>
+            <div class="cat-chip" onclick="toggleCat(this,'salon')">💇 Salon</div>
+            <div class="cat-chip" onclick="toggleCat(this,'electronics')">📱 Electronics</div>
+            <div class="cat-chip" onclick="toggleCat(this,'phone repair')">🔨 Phone Repair</div>
+            <div class="cat-chip" onclick="toggleCat(this,'pharmacy')">💊 Pharmacy</div>
+            <div class="cat-chip" onclick="toggleCat(this,'food')">🍽️ Food</div>
+            <div class="cat-chip" onclick="toggleCat(this,'groceries')">🛒 Groceries</div>
+            <div class="cat-chip" onclick="toggleCat(this,'clothing')">👗 Clothing</div>
+            <div class="cat-chip" onclick="toggleCat(this,'transport')">🚗 Transport</div>
+            <div class="cat-chip" onclick="toggleCat(this,'mpesa')">💚 M-Pesa</div>
+            <div class="cat-chip" onclick="toggleCat(this,'kinyozi')">✂️ Kinyozi</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Landing Page URL (optional)</label>
+          <input type="url" id="fLanding" placeholder="e.g. https://albuksystems.github.io/visionelectronics">
+        </div>
+        <div class="field">
+          <label>Notes (optional)</label>
+          <textarea id="fNotes" placeholder="e.g. confirmed client, contact name, renewal date..."></textarea>
+        </div>
+        <button class="btn-primary" onclick="addListing()">Save Listing →</button>
+      </div>
+    </div>
+
+    <!-- BUSINESS LOGIN CREATOR -->
+    <div class="biz-creator">
+      <div class="biz-creator-head" onclick="toggleBizCreator()">
+        <h3>🔑 Create Business Login</h3>
+        <span class="toggle-icon" id="bizCreatorIcon">+</span>
+      </div>
+      <div class="biz-creator-body" id="bizCreatorBody">
+        <div class="form-row">
+          <div class="field">
+            <label>Business Name *</label>
+            <input type="text" id="bcName" placeholder="e.g. Vision Electronics">
+          </div>
+          <div class="field">
+            <label>WhatsApp Number *</label>
+            <input type="tel" id="bcWa" placeholder="0700000000">
+          </div>
+        </div>
+        <div class="field">
+          <label>Location *</label>
+          <input type="text" id="bcLocation" placeholder="e.g. Biashara Street, Mlolongo">
+        </div>
+        <div class="field">
+          <label>Landing Page URL (optional)</label>
+          <input type="url" id="bcLanding" placeholder="https://albuksystems.github.io/...">
+        </div>
+        <div class="field">
+          <label>Subscription Tier *</label>
+          <div class="tier-selector">
+            <div class="tier-opt" id="bc-tier-mtaa" onclick="selectBCTier('mtaa')">
+              <div class="t-name" style="color:var(--green)">MTAA</div>
+              <div class="t-price">99 KES</div>
+            </div>
+            <div class="tier-opt" id="bc-tier-biashara" onclick="selectBCTier('biashara')">
+              <div class="t-name" style="color:var(--blue)">BIASHARA</div>
+              <div class="t-price">199 KES</div>
+            </div>
+            <div class="tier-opt" id="bc-tier-corridor" onclick="selectBCTier('corridor')">
+              <div class="t-name" style="color:var(--gold)">CORRIDOR</div>
+              <div class="t-price">299 KES</div>
+            </div>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="createBizLogin()" style="margin-top:8px">Generate Login Credentials →</button>
+
+        <!-- GENERATED CREDENTIALS -->
+        <div class="generated-creds" id="generatedCreds">
+          <div class="cred-row">
+            <span class="cred-label">Portal Link</span>
+            <span class="cred-value" id="credLink">—</span>
+          </div>
+          <div class="cred-row">
+            <span class="cred-label">Business Code</span>
+            <span class="cred-value" id="credCode">—</span>
+          </div>
+          <div class="cred-row">
+            <span class="cred-label">Password</span>
+            <span class="cred-value" id="credPass">—</span>
+          </div>
+          <div class="cred-row">
+            <span class="cred-label">Tier</span>
+            <span class="cred-value" id="credTier">—</span>
+          </div>
+          <button class="copy-creds-btn" onclick="copyCreds()">📋 Copy All Credentials</button>
+          <a class="wa-creds-btn" id="waSendCreds" href="#" target="_blank">📲 Send via WhatsApp</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- LISTINGS -->
+    <div>
+      <div class="section-head">
+        <h2>Active Subscribers</h2>
+        <button class="export-btn" onclick="exportCSV()">↓ Export CSV</button>
+      </div>
+      <input class="search-input" id="searchInput" placeholder="🔍 Search by name, location or category..." oninput="renderListings()" style="margin-bottom:12px">
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+        <button class="filter-btn" onclick="setFilter('mtaa',this)">🟢 Mtaa</button>
+        <button class="filter-btn" onclick="setFilter('biashara',this)">🔵 Biashara</button>
+        <button class="filter-btn" onclick="setFilter('corridor',this)">⭐ Corridor</button>
+        <button class="filter-btn" onclick="setFilter('suspended',this)">🔴 Suspended</button>
+      </div>
+      <div style="margin-top:12px">
+        <div class="listings-wrap" id="listingsWrap"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>✏️ Edit Listing</h3>
+      <button class="modal-close-btn" onclick="closeEditModal()">×</button>
+    </div>
+    <input type="hidden" id="editId">
+    <div class="field">
+      <label>Business Name</label>
+      <input type="text" id="editName" placeholder="Business name">
+    </div>
+    <div class="field">
+      <label>WhatsApp Number</label>
+      <input type="tel" id="editWa" placeholder="07XXXXXXXX">
+    </div>
+    <div class="field">
+      <label>Location</label>
+      <input type="text" id="editLocation" placeholder="Location">
+    </div>
+    <div class="field">
+      <label>Price Info</label>
+      <input type="text" id="editPrice" placeholder="e.g. Unga 2kg — KES 210">
+    </div>
+    <div class="field">
+      <label>Tier</label>
+      <select id="editTier" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-family:'Syne',sans-serif;font-size:0.875rem;outline:none;">
+        <option value="mtaa">MTAA — 99 KES</option>
+        <option value="biashara">BIASHARA — 199 KES</option>
+        <option value="corridor">CORRIDOR — 299 KES</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Landing Page URL</label>
+      <input type="url" id="editLanding" placeholder="https://...">
+    </div>
+    <div class="field">
+      <label>Notes</label>
+      <textarea id="editNotes" style="height:70px" placeholder="Internal notes..."></textarea>
+    </div>
+    <button class="modal-save-btn" onclick="saveEdit()">Save Changes →</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── BACKEND ───────────────────────────────────────────────────
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx0WIdGOOp6yVjb9TwaK0lJganyrPgI5u_tL4cumFuqyG5-vmaVpEZ2K9acJi_tPShlaQ/exec';
+
+  async function apiGet(params) {
+    const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
+    const res = await fetch(url);
+    return res.json();
+  }
+
+  // Use GET with encoded JSON to avoid CORS issues
+  async function apiPost(body) {
+    const url = SCRIPT_URL +
+      '?action=' + encodeURIComponent(body.action) +
+      '&data=' + encodeURIComponent(JSON.stringify(body));
+    const res = await fetch(url);
+    return res.json();
+  }
+
+  // ── AUTH ──────────────────────────────────────────────────────
+  const CREDS = { user: 'albuk', pass: 'patahapa2024' };
+
+  function doLogin() {
+    const u = document.getElementById('loginUser').value.trim();
+    const p = document.getElementById('loginPass').value.trim();
+    const err = document.getElementById('loginError');
+    if (u === CREDS.user && p === CREDS.pass) {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('adminShell').style.display = 'block';
+      loadListings();
+    } else {
+      err.style.display = 'block';
+      document.getElementById('loginPass').value = '';
+    }
+  }
+
+  function doLogout() {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('adminShell').style.display = 'none';
+    document.getElementById('loginUser').value = '';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginError').style.display = 'none';
+  }
+
+  function togglePassword() {
+    const input = document.getElementById('loginPass');
+    const btn = document.getElementById('pwToggleBtn');
+    if (!input || !btn) return;
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.innerHTML = '🙈';
+      btn.setAttribute('title', 'Hide password');
+    } else {
+      input.type = 'password';
+      btn.innerHTML = '👁';
+      btn.setAttribute('title', 'Show password');
+    }
+  }
+
+  // ── DATA ──────────────────────────────────────────────────────
+  let listings = [];
+
+  async function loadListings() {
+    showToast('⏳ Loading listings...');
+    try {
+      const data = await apiGet({ action: 'getListings' });
+      if (data.success) {
+        listings = data.listings.map(l => ({
+          id: l.ID, name: l.Name, whatsapp: l.WhatsApp,
+          location: l.Location, price: l.Price, tier: l.Tier,
+          categories: (l.Categories||'').split(',').map(c=>c.trim()).filter(Boolean),
+          landingPage: l.LandingPage || '',
+          notes: l.Notes || '', date: l.Date
+        }));
+        renderListings();
+        updateStats();
+        showToast('✅ Listings loaded');
+      }
+    } catch(e) {
+      showToast('❌ Could not load listings. Check connection.');
+    }
+  }
+
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).substr(2,4); }
+  function today() { return new Date().toLocaleDateString('en-KE',{day:'2-digit',month:'short',year:'numeric'}); }
+
+  // ── FORM ──────────────────────────────────────────────────────
+  let selectedTier = null;
+  let selectedCats = [];
+
+  function toggleForm() {
+    document.getElementById('formBody').classList.toggle('open');
+    document.getElementById('formToggle').classList.toggle('open');
+  }
+
+  function selectTier(tier) {
+    selectedTier = tier;
+    ['mtaa','biashara','corridor'].forEach(t => {
+      const el = document.getElementById('tier-'+t);
+      el.className = 'tier-opt';
+      if (t === tier) el.classList.add('selected-'+t);
+    });
+  }
+
+  function toggleCat(el, cat) {
+    if (el.classList.contains('active')) {
+      el.classList.remove('active');
+      selectedCats = selectedCats.filter(c => c !== cat);
+    } else {
+      el.classList.add('active');
+      selectedCats.push(cat);
+    }
+  }
+
+  async function addListing() {
+    const name = document.getElementById('fName').value.trim();
+    const wa = document.getElementById('fWa').value.trim().replace(/\D/g,'');
+    const location = document.getElementById('fLocation').value.trim();
+    const price = document.getElementById('fPrice').value.trim();
+    const landing = document.getElementById('fLanding').value.trim();
+    const notes = document.getElementById('fNotes').value.trim();
+
+    if (!name) return showToast('❌ Please enter a business name');
+    if (!wa) return showToast('❌ Please enter a WhatsApp number');
+    if (!location) return showToast('❌ Please enter a location');
+    if (!selectedTier) return showToast('❌ Please select a subscription tier');
+    if (selectedCats.length === 0) return showToast('❌ Please select at least one category');
+
+    let waNum = wa;
+    if (wa.startsWith('07') || wa.startsWith('01')) waNum = '254' + wa.slice(1);
+    else if (!wa.startsWith('254')) waNum = '254' + wa;
+
+    showToast('⏳ Saving...');
+    try {
+      const result = await apiPost({
+        action: 'addListing',
+        name, whatsapp: waNum, location, price,
+        tier: selectedTier,
+        categories: selectedCats.join(','),
+        landingPage: landing,
+        notes
+      });
+
+      if (result.success) {
+        await loadListings();
+        resetForm();
+        showToast('✅ ' + name + ' added successfully!');
+        toggleForm();
+      } else {
+        showToast('❌ Error: ' + (result.error || 'Unknown error'));
+      }
+    } catch(e) {
+      showToast('❌ Connection error. Please try again.');
+    }
+  }
+
+  function resetForm() {
+    ['fName','fWa','fLocation','fPrice','fNotes'].forEach(id => document.getElementById(id).value = '');
+    selectedTier = null; selectedCats = [];
+    ['mtaa','biashara','corridor'].forEach(t => document.getElementById('tier-'+t).className = 'tier-opt');
+    document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+  }
+
+  async function deleteListing(id) {
+    if (!confirm('Are you sure you want to delete this listing?')) return;
+
+    showToast('⏳ Deleting...');
+    try {
+      const result = await apiPost({ action: 'deleteListing', id });
+      if (result.success) {
+        await loadListings();
+        showToast('🗑️ Listing deleted');
+      } else {
+        showToast('❌ Error: ' + (result.error || 'Unknown'));
+      }
+    } catch(e) {
+      showToast('❌ Connection error. Please try again.');
+    }
+  }
+
+  // ── FILTER & RENDER ───────────────────────────────────────────
+  let activeFilter = 'all';
+
+  function setFilter(f, btn) {
+    activeFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderListings();
+  }
+
+  const tierColors = { mtaa:'var(--green)', biashara:'var(--blue)', corridor:'var(--gold)' };
+  const tierPrices = { mtaa:99, biashara:199, corridor:299 };
+
+  function renderListings() {
+    const wrap = document.getElementById('listingsWrap');
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    let filtered = listings.filter(l => {
+      const matchTier = activeFilter === 'all' || l.tier === activeFilter;
+      const matchSuspend = activeFilter === 'suspended' ? l.suspended : (activeFilter !== 'suspended');
+      const matchSearch = !search || l.name.toLowerCase().includes(search) || l.location.toLowerCase().includes(search) || l.categories.some(c => c.includes(search));
+      return matchTier && matchSearch;
+    });
+
+    if (filtered.length === 0) {
+      wrap.innerHTML = `<div class="empty-state"><div class="icon">🏪</div><p>No listings found.<br>Add your first one above!</p></div>`;
+      return;
+    }
+
+    wrap.innerHTML = filtered.map(l => `
+      <div class="listing-item ${l.suspended ? 'suspended' : ''}">
+        <div class="listing-tier-dot dot-${l.tier}"></div>
+        <div class="listing-details">
+          <div class="listing-name">
+            ${l.name}
+            ${l.suspended
+              ? '<span class="suspended-badge">SUSPENDED</span>'
+              : '<span class="active-badge">ACTIVE</span>'}
+          </div>
+          <div class="listing-meta">📍 ${l.location} · Added ${l.date}</div>
+          <div class="listing-meta">📱 +${l.whatsapp}</div>
+          ${l.price ? `<div class="listing-meta" style="color:var(--gold);margin-top:2px">💰 ${l.price}</div>` : ''}
+          ${l.landingPage ? `<div class="listing-meta" style="color:var(--blue);margin-top:2px">🌐 Has landing page</div>` : ''}
+          ${l.notes ? `<div class="listing-meta" style="margin-top:2px">📝 ${l.notes}</div>` : ''}
+          <div class="listing-cats">
+            ${l.categories.map(c=>`<span class="cat-tag">${c}</span>`).join('')}
+            <span class="cat-tag" style="color:${tierColors[l.tier]}">${l.tier.toUpperCase()} · KES ${tierPrices[l.tier]}/mo</span>
+          </div>
+        </div>
+        <div class="listing-actions">
+          <button class="action-btn edit" onclick="openEditModal('${l.id}')">Edit</button>
+          <button class="action-btn wa" onclick="window.open('https://wa.me/${l.whatsapp}','_blank')">WhatsApp</button>
+          ${l.suspended
+            ? `<button class="action-btn reactivate" onclick="toggleSuspend('${l.id}', false)">Reactivate</button>`
+            : `<button class="action-btn suspend" onclick="toggleSuspend('${l.id}', true)">Suspend</button>`}
+          <button class="action-btn delete" onclick="deleteListing('${l.id}')">Delete</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function updateStats() {
+    document.getElementById('statTotal').textContent = listings.length;
+    document.getElementById('statRevenue').textContent = listings.reduce((s,l)=>s+tierPrices[l.tier],0).toLocaleString();
+    document.getElementById('statCats').textContent = new Set(listings.flatMap(l=>l.categories)).size;
+  }
+
+  function exportCSV() {
+    const headers = ['Name','WhatsApp','Location','Price','Tier','Categories','Date Added'];
+    const rows = listings.map(l=>[`"${l.name}"`,`"${l.whatsapp}"`,`"${l.location}"`,`"${l.price}"`,l.tier,`"${l.categories.join(', ')}"`,l.date]);
+    const csv = [headers,...rows].map(r=>r.join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+    a.download = 'patahapa-listings.csv';
+    a.click();
+    showToast('📥 CSV downloaded!');
+  }
+
+  // ── BUSINESS LOGIN CREATOR ────────────────────────────────────
+  let bcTier = null;
+  let lastGeneratedCreds = null;
+
+  function toggleBizCreator() {
+    const body = document.getElementById('bizCreatorBody');
+    const icon = document.getElementById('bizCreatorIcon');
+    body.classList.toggle('open');
+    icon.textContent = body.classList.contains('open') ? '×' : '+';
+  }
+
+  function selectBCTier(tier) {
+    bcTier = tier;
+    ['mtaa','biashara','corridor'].forEach(t => {
+      const el = document.getElementById('bc-tier-' + t);
+      el.className = 'tier-opt';
+      if (t === tier) el.classList.add('selected-' + t);
+    });
+  }
+
+  function generateCode(name) {
+    const clean = name.toUpperCase().replace(/[^A-Z]/g,'').slice(0,5);
+    const num = Math.floor(Math.random() * 90 + 10);
+    return clean + num;
+  }
+
+  function generatePassword(name) {
+    const clean = name.toLowerCase().replace(/[^a-z]/g,'').slice(0,5);
+    const num = Math.floor(Math.random() * 9000 + 1000);
+    return clean + num;
+  }
+
+  async function createBizLogin() {
+    const name    = document.getElementById('bcName').value.trim();
+    const wa      = document.getElementById('bcWa').value.trim().replace(/\D/g,'');
+    const location = document.getElementById('bcLocation').value.trim();
+    const landing = document.getElementById('bcLanding').value.trim();
+
+    if (!name)    return showToast('❌ Please enter business name');
+    if (!wa)      return showToast('❌ Please enter WhatsApp number');
+    if (!location) return showToast('❌ Please enter location');
+    if (!bcTier)  return showToast('❌ Please select a tier');
+
+    let waNum = wa;
+    if (wa.startsWith('07') || wa.startsWith('01')) waNum = '254' + wa.slice(1);
+    else if (!wa.startsWith('254')) waNum = '254' + wa;
+
+    const code     = generateCode(name);
+    const password = generatePassword(name);
+    const limits   = { mtaa:5, biashara:20, corridor:999 };
+    const portalUrl = 'albuksystems.github.io/PataHapaBusinessPortalv2';
+
+    // Save to Google Sheet
+    showToast('⏳ Creating login...');
+    try {
+      await apiPost({
+        action: 'addBusiness',
+        code, password, name,
+        location, whatsapp: waNum,
+        tier: bcTier,
+        landingPage: landing,
+      });
+    } catch(e) {
+      showToast('⚠️ Saved locally — sync to Sheet when online');
+    }
+
+    // Show generated credentials
+    document.getElementById('credLink').textContent  = portalUrl;
+    document.getElementById('credCode').textContent  = code;
+    document.getElementById('credPass').textContent  = password;
+    document.getElementById('credTier').textContent  = bcTier.toUpperCase() + ' — KES ' + tierPrices[bcTier] + '/mo';
+    document.getElementById('generatedCreds').classList.add('visible');
+
+    // Store for copy/WA
+    lastGeneratedCreds = { code, password, name, waNum, bcTier, portalUrl };
+
+    // Set WhatsApp send link
+    const msg = `🏪 Welcome to Pata Hapa, ${name}!\n\nYour business portal is ready. Here are your login details:\n\n🔗 Portal: https://${portalUrl}\n🔑 Business Code: ${code}\n🔑 Password: ${password}\n\nLog in, add your products and generate your first promo. Your customers are waiting!\n\n— Al, Albuk Global`;
+    document.getElementById('waSendCreds').href = 'https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg);
+
+    showToast('✅ Login created for ' + name + '!');
+  }
+
+  function copyCreds() {
+    if (!lastGeneratedCreds) return;
+    const { code, password, name, bcTier, portalUrl } = lastGeneratedCreds;
+    const text = `🏪 Welcome to Pata Hapa, ${name}!\n\nYour business portal is ready:\n\n🔗 Portal: https://${portalUrl}\n🔑 Business Code: ${code}\n🔑 Password: ${password}\nPlan: ${bcTier.toUpperCase()}\n\n— Al, Albuk Global`;
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('📋 Credentials copied — ready to paste on WhatsApp!');
+    }).catch(() => {
+      showToast('📋 Copy: Code=' + code + ' Pass=' + password);
+    });
+  }
+
+  // ── EDIT MODAL ────────────────────────────────────────────────
+  function openEditModal(id) {
+    const l = listings.find(x => x.id === id);
+    if (!l) return;
+    document.getElementById('editId').value       = l.id;
+    document.getElementById('editName').value     = l.name;
+    document.getElementById('editWa').value       = l.whatsapp;
+    document.getElementById('editLocation').value = l.location;
+    document.getElementById('editPrice').value    = l.price || '';
+    document.getElementById('editTier').value     = l.tier;
+    document.getElementById('editLanding').value  = l.landingPage || '';
+    document.getElementById('editNotes').value    = l.notes || '';
+    document.getElementById('editModal').classList.add('open');
+  }
+
+  function closeEditModal() {
+    document.getElementById('editModal').classList.remove('open');
+  }
+
+  async function saveEdit() {
+    const id       = document.getElementById('editId').value;
+    const name     = document.getElementById('editName').value.trim();
+    const wa       = document.getElementById('editWa').value.trim().replace(/\D/g,'');
+    const location = document.getElementById('editLocation').value.trim();
+    const price    = document.getElementById('editPrice').value.trim();
+    const tier     = document.getElementById('editTier').value;
+    const landing  = document.getElementById('editLanding').value.trim();
+    const notes    = document.getElementById('editNotes').value.trim();
+
+    if (!name || !wa || !location) return showToast('❌ Name, WhatsApp and location are required');
+
+    let waNum = wa;
+    if (wa.startsWith('07') || wa.startsWith('01')) waNum = '254' + wa.slice(1);
+    else if (!wa.startsWith('254')) waNum = '254' + wa;
+
+    showToast('⏳ Saving changes...');
+    try {
+      const result = await apiPost({
+        action: 'updateListing',
+        id, name, whatsapp: waNum, location, price, tier,
+        landingPage: landing, notes
+      });
+      if (result.success) {
+        closeEditModal();
+        await loadListings();
+        showToast('✅ Listing updated successfully!');
+      } else {
+        showToast('❌ Error: ' + (result.error || 'Unknown'));
+      }
+    } catch(e) {
+      // Update locally if offline
+      const l = listings.find(x => x.id === id);
+      if (l) {
+        l.name = name; l.whatsapp = waNum; l.location = location;
+        l.price = price; l.tier = tier; l.landingPage = landing; l.notes = notes;
+      }
+      closeEditModal();
+      renderListings();
+      updateStats();
+      showToast('✅ Updated (offline mode)');
+    }
+  }
+
+  // Close modal on overlay tap
+  document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) closeEditModal();
+  });
+
+  // ── SUSPEND / REACTIVATE ──────────────────────────────────────
+  async function toggleSuspend(id, suspend) {
+    const action = suspend ? 'suspend' : 'reactivate';
+    const msg = suspend
+      ? 'Suspend this listing? They will disappear from the marketplace.'
+      : 'Reactivate this listing?';
+    if (!confirm(msg)) return;
+
+    showToast(suspend ? '⏳ Suspending...' : '⏳ Reactivating...');
+    try {
+      await apiPost({ action: 'updateListing', id, suspended: suspend });
+    } catch(e) { /* offline */ }
+
+    // Update locally immediately
+    const l = listings.find(x => x.id === id);
+    if (l) l.suspended = suspend;
+    renderListings();
+    updateStats();
+    showToast(suspend ? '🔴 Listing suspended' : '✅ Listing reactivated!');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2800);
+  }
+</script>
+</body>
+</html>
